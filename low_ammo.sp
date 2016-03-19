@@ -5,15 +5,15 @@
 
 new Handle:trie_armas;
 bool csgo;
-
-#define LOWAMMO_PERCENTAGE 0.35
+float percentage;
+Handle cvar_p;
 
 public Plugin:myinfo =
 {
 	name = "SM Advert in low ammo",
 	author = "Franc1sco franug",
 	description = "",
-	version = "1.0",
+	version = "1.1",
 	url = "http://steamcommunity.com/id/franug"
 };
 
@@ -22,7 +22,11 @@ public OnPluginStart()
 	if (GetEngineVersion() != Engine_CSGO)csgo = false;
 	else csgo = true;
 	
-	CreateConVar("sm_advertlowammo_version", "1.0", "", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	cvar_p = CreateConVar("sm_advertlowammo_percentage", "0.30", "Percentage the ammo spend needed for show the advert");
+	CreateConVar("sm_advertlowammo_version", "1.1", "", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	
+	percentage = GetConVarFloat(cvar_p);
+	HookConVarChange(cvar_p, OnSettingsChange);
 	
 	trie_armas = CreateTrie();
 	
@@ -33,6 +37,11 @@ public OnPluginStart()
 		{
 			OnClientPutInServer(i);
 		}
+}
+
+public OnSettingsChange(Handle:cvar, const String:oldvalue[], const String:newvalue[])
+{
+	percentage = StringToFloat(newvalue);
 }
 
 public OnMapStart()
@@ -67,7 +76,7 @@ Darm(client)
 				int ammo = GetReserveAmmo(weapon)-1;
 				if (ammo < 0)ammo = 0;
 				//PrintToChat(client, "municion fijado a %i",warray[1]);
-				float porc = (warray * LOWAMMO_PERCENTAGE);
+				float porc = (warray * percentage);
 				if(ammo <= RoundToCeil(porc))
 				{
 					if(csgo)
