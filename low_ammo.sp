@@ -13,7 +13,7 @@ public Plugin:myinfo =
 	name = "SM Advert in low ammo",
 	author = "Franc1sco franug",
 	description = "",
-	version = "1.1",
+	version = "1.2",
 	url = "http://steamcommunity.com/id/franug"
 };
 
@@ -23,14 +23,14 @@ public OnPluginStart()
 	else csgo = true;
 	
 	cvar_p = CreateConVar("sm_advertlowammo_percentage", "0.30", "Percentage the ammo spend needed for show the advert");
-	CreateConVar("sm_advertlowammo_version", "1.1", "", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	CreateConVar("sm_advertlowammo_version", "1.2", "", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 	
 	percentage = GetConVarFloat(cvar_p);
 	HookConVarChange(cvar_p, OnSettingsChange);
 	
 	trie_armas = CreateTrie();
 	
-	HookEvent("weapon_fire", ClientWeaponReload);
+	HookEvent("weapon_fire", ClientWeaponFire);
 	
 	for(new i = 1; i <= MaxClients; i++)
 		if(IsClientInGame(i))
@@ -49,7 +49,7 @@ public OnMapStart()
 	if(csgo) PrecacheSound("ui/beep22.wav");	
 }
 
-public ClientWeaponReload(Handle:event, const String:name[], bool:dontBroadcast)
+public ClientWeaponFire(Handle:event, const String:name[], bool:dontBroadcast)
 {
     new client = GetClientOfUserId(GetEventInt(event,  "userid"));
     Darm(client);
@@ -68,9 +68,11 @@ Darm(client)
 		if(weapon > 0 && (weapon == GetPlayerWeaponSlot(client, 0) || weapon == GetPlayerWeaponSlot(client, 1)))
 		{
 			new warray;
-			decl String:classname[4];
+			decl String:classname[64];
 			//GetEdictClassname(weapon, classname, sizeof(classname));
-			Format(classname, 4, "%i", GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex"));
+			if(csgo)Format(classname, 4, "%i", GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex"));
+			else GetEdictClassname(weapon, classname, sizeof(classname));
+			
 			if(GetTrieValue(trie_armas, classname, warray))
 			{
 				int ammo = GetReserveAmmo(weapon)-1;
@@ -104,10 +106,12 @@ public Action:EventItemPickup2(client, weapon)
 	if(weapon == GetPlayerWeaponSlot(client, 0) || weapon == GetPlayerWeaponSlot(client, 1))
 	{
 		new warray;
-		decl String:classname[4];
+		decl String:classname[64];
 		//GetEdictClassname(weapon, classname, sizeof(classname));
-		Format(classname, 4, "%i", GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex"));
-	
+		if(csgo) Format(classname, 4, "%i", GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex"));
+		else GetEdictClassname(weapon, classname, sizeof(classname));
+		
+		
 		if(!GetTrieValue(trie_armas, classname, warray))
 		{
 			warray = GetEntProp(weapon, Prop_Send, "m_iClip1");
